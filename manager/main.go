@@ -5,23 +5,26 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 )
 
 const FilePath = "tasks.json"
 
 // FindNextID находит максимальный ID среди существующих задач и возвращает следующий доступный ID.
-func FindNextID(tasks []Task) int {
+func findNextID(tasks []Task) int {
 	nextID := 0
 	for _, task := range tasks {
 		if task.ID > nextID {
 			nextID = task.ID
 		}
 	}
+
 	return nextID + 1
 }
 
 // LoadTasks загружает задачи из файла tasks.json, возвращает задачи в виде слайса и следующий доступный ID.
-func LoadTasks() ([]Task, int, error) {
+func loadTasks() ([]Task, int, error) {
 	file, err := os.OpenFile(FilePath, os.O_CREATE, 0666)
 	if err != nil {
 		return nil, 0, fmt.Errorf("ошибка открытия файла: %w", err)
@@ -38,39 +41,75 @@ func LoadTasks() ([]Task, int, error) {
 		return nil, 0, fmt.Errorf("ошибка декодирования JSON: %w", err)
 	}
 
-	lastID := FindNextID(tasks)
+	lastID := findNextID(tasks)
+
 	return tasks, lastID, nil
 }
 
 // StartCommand обрабатывает команду, переданную через аргументы командной строки,
 // и вызывает соответствующую функцию для выполнения задачи: add, list, done, delete, help.
-func StartCommand(command []string, tasks []Task, nextID int) {
-	switch command[1] {
+func startCommand(commands []string, tasks []Task, nextID int) {
+	args := commands[2:]
+	switch commands[1] {
 	case "add":
-		AddTask(command[2:], tasks, nextID)
+		if len(args) == 0 {
+			fmt.Println("Ошибка: нет названия задачи")
+			return
+		}		
+
+		fullTitle := strings.Join(args, " ")
+		addTask(tasks, nextID, fullTitle)
 	case "list":
-		ListTasks(tasks)
+		if len(tasks) == 0 {
+			fmt.Println("Список задач пуст, вы можете их добавить")
+			return
+		}
+
+		listTasks(tasks)
 	case "done":
-		MarkTaskDone(command[2:], tasks)
+		if len(args) == 0 {
+			fmt.Println("Ошибка: не передан ID задачи")
+			return
+		}
+
+		intIDArg, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Println("Ошибка: ID задачи должен быть числом")
+			return
+		}
+
+		markTaskDone(tasks, intIDArg)
 	case "delete":
-		DeleteTask(command[2:], tasks)
+		if len(args) == 0 {
+			fmt.Println("Ошибка: не передан ID задачи")
+			return
+		}
+
+		intIDArg, err := strconv.Atoi(args[0])
+		if err != nil {
+			fmt.Println("Ошибка: ID задачи должен быть числом")
+			return
+		}
+		
+		deleteTask(tasks, intIDArg)
 	case "help":
 		fmt.Println("Список команд: add, list, done, delete, help")
 	default:
-		fmt.Printf("Неизвестная команда: %s\n", command[1])
+		fmt.Printf("Неизвестная команда: %s\n", commands[1])
 	}
 }
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Ошибка: команда не указана. Используйте 'add', 'list', 'done', 'delete' или 'help'.")
+		fmt.Println("Ошибка: команда не указана. Используйте 'add', 'list', 'done', 'delete' или 'help'")
 		return
 	}
 
-	tasks, nextID, err := LoadTasks()
+	tasks, nextID, err := loadTasks()
 	if err != nil {
 		fmt.Println("Ошибка загрузки задач:", err)
 		return
 	}
-	StartCommand(os.Args, tasks, nextID)
+
+	startCommand(os.Args, tasks, nextID)
 }

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 )
 
 type Task struct{
@@ -15,7 +13,7 @@ type Task struct{
 }
 
 // RewriteTasks полностью перезаписывает задачи в файл tasks.json после их обновления.
-func RewriteTasks(tasks []Task) {
+func rewriteTasks(tasks []Task) {
 	file, err := os.Create(FilePath)
 	if err != nil {
 		fmt.Println("Ошибка открытия файла:", err)
@@ -32,54 +30,32 @@ func RewriteTasks(tasks []Task) {
 }
 
 // AddTask добавляет новую задачу в слайс задач и перезаписывает файл tasks.json.
-func AddTask(args []string, tasks []Task, nextID int) {
+func addTask(tasks []Task, nextID int, fullTitle string) {
 	fmt.Println("Добавляем задачу...")
 
-	if len(args) == 0 {
-		fmt.Println("Ошибка: нет названия задачи.")
-		return
-	}
-
-	fullTitle := strings.Join(args, " ")
 	newTask := Task{ID: nextID, Title: fullTitle, Done: false}
 	tasks = append(tasks, newTask)
-	RewriteTasks(tasks)
+	rewriteTasks(tasks)
 
-	fmt.Printf("Добавлена новая задача '%s' с ID %d.\n", fullTitle, nextID)
+	fmt.Printf("Добавлена новая задача '%s' с ID %d\n", fullTitle, nextID)
 }
 
 // ListTasks выводит список всех существующих задач.
-func ListTasks(tasks []Task) {
+func listTasks(tasks []Task) {
 	fmt.Println("Выводим список задач...")
-
-	if len(tasks) == 0 {
-		fmt.Println("Список задач пуст, вы можете их добавить.")
-		return
-	}
 
     for _, task := range tasks {
 		if task.Done {
-			fmt.Printf("[%d] %s - [x] Выполнена.\n", task.ID, task.Title)
+			fmt.Printf("[%d] %s - [x] Выполнена\n", task.ID, task.Title)
 		} else {
-			fmt.Printf("[%d] %s - [ ] Не выполнена.\n", task.ID, task.Title)
+			fmt.Printf("[%d] %s - [ ] Не выполнена\n", task.ID, task.Title)
 		}
 	}
 }
 
 // MarkTaskDone отмечает задачу выполненной по её ID и перезаписывает файл tasks.json.
-func MarkTaskDone(args []string, tasks []Task) {
+func markTaskDone(tasks []Task, intIDArg int) {
 	fmt.Println("Отмечаем задачу как выполненную...")
-
-	if len(args) == 0 {
-		fmt.Println("Ошибка: не передан ID задачи.")
-		return
-	}
-
-	intIDArg, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Println("Ошибка: ID задачи должен быть числом.")
-		return
-	}
 
 	found := false
 	for i := range tasks {
@@ -89,31 +65,19 @@ func MarkTaskDone(args []string, tasks []Task) {
 			break
 		}
 	}
-
 	if !found {
-		fmt.Printf("Ошибка: задача с ID %d не найдена.", intIDArg)
+		fmt.Printf("Ошибка: задача с ID %d не найдена", intIDArg)
 		return
 	}
 
-	RewriteTasks(tasks)
+	rewriteTasks(tasks)
 
-	fmt.Printf("Задача с ID %d выполнена.\n", intIDArg)
+	fmt.Printf("Задача с ID %d выполнена\n", intIDArg)
 }
 
 // DeleteTask удаляет задачу по её ID из списка задач и перезаписывает файл tasks.json.
-func DeleteTask(args []string, tasks []Task) {
+func deleteTask(tasks []Task, intIDArg int) {
 	fmt.Println("Удаляем задачу...")
-
-	if len(args) == 0 {
-		fmt.Println("Ошибка: не передан ID задачи.")
-		return
-	}
-
-	intIDArg, err := strconv.Atoi(args[0])
-	if err != nil {
-		fmt.Println("Ошибка: ID задачи должен быть числом.")
-		return
-	}
 
 	found := false
 	for i, task := range tasks {
@@ -124,13 +88,12 @@ func DeleteTask(args []string, tasks []Task) {
 			break
 		}
 	}
-
 	if !found {
-		fmt.Printf("Ошибка: задача с ID %d не найдена.", intIDArg)
+		fmt.Printf("Ошибка: задача с ID %d не найдена", intIDArg)
 		return
 	}
 
-	RewriteTasks(tasks)
+	rewriteTasks(tasks)
 
-	fmt.Printf("Задача с ID %d успешно удалена.\n", intIDArg)
+	fmt.Printf("Задача с ID %d успешно удалена\n", intIDArg)
 }
